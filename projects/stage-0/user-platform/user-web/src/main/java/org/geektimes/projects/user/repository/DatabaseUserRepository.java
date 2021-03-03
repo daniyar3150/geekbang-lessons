@@ -43,7 +43,14 @@ public class DatabaseUserRepository implements UserRepository {
 
     @Override
     public boolean save(User user) {
-        return false;
+        String name = user.getName();
+        String password = user.getPassword();
+        String email = user.getEmail();
+        String phone = user.getPhoneNumber();
+        executeUpdate(INSERT_USER_DML_SQL, e -> {
+            logger.log(Level.SEVERE, "插入数据时发生异常", e.getCause());
+        }, name, password, email, phone);
+        return true;
     }
 
     @Override
@@ -135,6 +142,20 @@ public class DatabaseUserRepository implements UserRepository {
             exceptionHandler.accept(e);
         }
         return null;
+    }
+
+    protected  Boolean executeUpdate(String sql, Consumer<Throwable> exceptionHandler, Object... args) {
+        Connection conn = getConnection();
+        try {
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            for (int i = 0; i < args.length; i++) {
+                stmt.setObject(i + 1, args[i]);
+            }
+            return stmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            exceptionHandler.accept(e.getCause());
+            return false;
+        }
     }
 
 
